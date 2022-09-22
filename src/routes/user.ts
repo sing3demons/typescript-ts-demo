@@ -5,8 +5,11 @@ import bcrypt from 'bcrypt'
 import mongoose from 'mongoose'
 
 const connectMongoDB = async (): Promise<void> => {
-  await mongoose.connect('mongodb://localhost:27017/user')
-  console.log('Connected to MongoDB...')
+  try {
+    await mongoose.connect('mongodb://localhost:27017/user')
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 connectMongoDB()
@@ -47,6 +50,14 @@ const userSchema = new mongoose.Schema(
     versionKey: false,
   }
 )
+
+interface Users {
+  username: string
+  password: string
+  email: string
+  phone: string
+  age: number
+}
 const User = mongoose.model('user', userSchema)
 
 router.get('/user', async (req: Request, res: Response) => {
@@ -92,7 +103,7 @@ router.post('/register', async (req: Request, res: Response) => {
   try {
     const { username, password, email, phone, age } = req.body
 
-    const hash = await bcrypt.hash(password, 10)
+    const hash: string = await bcrypt.hash(password, 10)
 
     let user = new User()
     user.username = username
@@ -100,8 +111,9 @@ router.post('/register', async (req: Request, res: Response) => {
     user.password = hash
     user.phone = phone
     user.age = age
-    //   const user = new User({ username, password, email, phone, age })
+
     const result = await user.save()
+
     res.status(200).json({
       resultCode: 20000,
       resultDescription: 'Success',
@@ -131,7 +143,7 @@ router.post('/login', async (req: Request, res: Response) => {
       throw error
     }
 
-    const isValid = await bcrypt.compare(password, user.password)
+    const isValid: boolean = await bcrypt.compare(password, user.password)
 
     if (!isValid) {
       const error: any = new Error('password')
